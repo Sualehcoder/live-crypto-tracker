@@ -3,81 +3,64 @@ import requests
 import pandas as pd
 import time
 from datetime import datetime
+import alerts  # <--- IMPORT YOUR NEW FILE
 
-# 1. API Setup
+# --- CONFIGURATION ---
 URL = "https://api.coingecko.com/api/v3/coins/markets"
 PARAMS = {
     "vs_currency": "usd",
     "ids": "bitcoin,ethereum,dogecoin,solana,ripple",
     "order": "market_cap_desc",
     "per_page": 10,
-    "page": 1,
     "sparkline": "false"
 }
 
-st.title("📈 Live Crypto Dashboard")
-st.write("Tracking real-time prices...")
+# STATE MANAGEMENT (To track when we last sent an email)
+if "last_alert_time" not in st.session_state:
+    st.session_state["last_alert_time"] = 0
 
-# Create empty slots for the Table and the Chart
-table_placeholder = st.empty()
-chart_placeholder = st.empty()
+st.title("📈 Live Crypto Dashboard + Alerts")
 
-# Initialize a list to save the history of Bitcoin prices
-# We need this to draw the line!
-bitcoin_history = []
+# Inputs for your Alert
+target_price = st.number_input("Set Bitcoin Buy Price ($)", value=95000)
 
-if st.button("Start Live Feed"):
-    st.info("Fetching data... (This chart will grow every 10 seconds)")
+if st.button("Start Live Tracking"):
+    st.info("Tracking started...")
+    placeholder = st.empty()
     
     while True:
         try:
-            # --- API CALL ---
             response = requests.get(URL, params=PARAMS)
             data = response.json()
             
-            # Process Data
-            crypto_list = []
-            for coin in data:
-                crypto_list.append({
-                    "Name": coin['name'],
-                    "Price ($)": coin['current_price'],
-                    "24h Change (%)": coin['price_change_percentage_24h']
-                })
+            # Find Bitcoin
+            btc = next(item for item in data if item["name"] == "Bitcoin")
+            current_price = btc["current_price"]
             
-            df = pd.DataFrame(crypto_list)
+            # --- ALERT LOGIC ---
+            if current_price < target_price:
+                # Check if we sent an email recently (e.g., in the last 3600 seconds/1 hour)
+                current_time = time.time()
+                if current_time - st.session_state["last_alert_time"] > 3600:
+                    
+                    st.warning(f"📉 Price Drop Detected! Sending Email...")
+                    
+                    # Call the function from alerts.py
+                    success = alerts.send_email_alert("Bitcoin", current_price)
+                    
+                    if success:
+                        st.success("✅ Email Sent successfully!")
+                        st.session_state["last_alert_time"] = current_time
+                else:
+                    st.caption("⚠️ Price is low, but email already sent recently (Cooldown active).")
+
+            # Update UI
+            with placeholder.container():
+                st.metric(label="Bitcoin Price", value=f"${current_price}", delta=f"{btc['price_change_percentage_24h']}%")
+                st.dataframe(pd.DataFrame(data)[['name', 'current_price', 'price_change_percentage_24h']])
             
-            # --- 4. CHARTING ENGINE ---
-            # Find Bitcoin's current price
-            btc_data = next(item for item in crypto_list if item["Name"] == "Bitcoin")
-            current_price = btc_data["Price ($)"]
-            
-            # Add to history with the current time
-            now = datetime.now().strftime("%H:%M:%S")
-            bitcoin_history.append({"Time": now, "Bitcoin Price ($)": current_price})
-            
-            # Create a dataframe specifically for the chart
-            chart_data = pd.DataFrame(bitcoin_history)
-            
-            # --- DISPLAY UPDATES ---
-            
-            # 1. Update the Table
-            table_placeholder.dataframe(df.style.format({"Price ($)": "{:.2f}"}))
-            
-            # 2. Update the Chart
-            # We tell Streamlit to chart the 'Bitcoin Price' column
-            if not chart_data.empty:
-                chart_placeholder.line_chart(
-                    chart_data.set_index("Time")["Bitcoin Price ($)"]
-                )
-            
-            # 3. Alert Logic (Your Algo Trader)
-            if current_price < 95000:
-                st.toast(f"📉 ALERT: BTC Drop! ${current_price}", icon="⚠️")
-            
-            time.sleep(10) # Update every 10s
-            
+            time.sleep(10)
+
         except Exception as e:
             st.error(f"Error: {e}")
             break
-else:
-    st.write("Click to start.")

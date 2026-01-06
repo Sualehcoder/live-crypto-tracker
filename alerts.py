@@ -2,10 +2,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
-
+import streamlit as st
 # CONFIGURATION (Replace with your details)
 EMAIL_SENDER = st.secrets["email_address"]
-import streamlit as st
+
 
 # ... inside your function or at top ...
 # EMAIL_PASSWORD = "hardcoded_password" <--- DELETE THIS

@@ -10,7 +10,7 @@ EMAIL_SENDER = st.secrets["email_address"]
 # ... inside your function or at top ...
 # EMAIL_PASSWORD = "hardcoded_password" <--- DELETE THIS
 EMAIL_PASSWORD = st.secrets["email_password"] # <--- USE THIS
-EMAIL_RECEIVER = "your_email@gmail.com"      # Send to yourself
+EMAIL_RECEIVER = st.secrets["email_address"]      # Send to yourself
 
 def send_email_alert(crypto_name, price):
     try:

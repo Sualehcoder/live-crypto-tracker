@@ -3,6 +3,9 @@ import requests
 import pandas as pd
 import time
 from datetime import datetime
+import streamlit as st
+# DEBUG: Print all secret keys to the screen
+st.write("Available Keys:", st.secrets.keys())
 import alerts  # <--- IMPORT YOUR NEW FILE
 
 # --- CONFIGURATION ---

@@ -24,6 +24,14 @@ if "last_alert_time" not in st.session_state:
 
 st.title("📈 Live Crypto Dashboard + Alerts")
 
+# --- CREDIT SECTION ---
+st.sidebar.title("Configuration")
+st.sidebar.info("Developed by Sualeh")
+
+# ----------------------
+
+# ... rest of your code (inputs, buttons, etc.)
+
 # Inputs for your Alert
 target_price = st.number_input("Set Bitcoin Buy Price ($)", value=95000)
 
